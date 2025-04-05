@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.ant-tabs-ink-bar {
+  background-color: black !important; /* Đổi màu thanh trượt active */
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: black !important; /* Đổi màu chữ của tab đang active */
+}
+
+.ant-tabs-tab:hover {
+  color: black !important; /* Đổi màu chữ khi hover */
+}
+
+.ant-tabs-tab {
+  color: gray !important; /* Đổi màu chữ tab chưa active */
+}
