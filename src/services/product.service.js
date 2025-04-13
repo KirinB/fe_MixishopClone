@@ -15,7 +15,11 @@ export const productService = {
     );
   },
   getProductById: (id) => {
-    return http.get(`product/${id}`);
+    return http.get(`/product/${id}`);
+  },
+
+  getProductByIds: (data) => {
+    return http.post(`/product/by-ids`, data);
   },
 
   create: (data, token) => {

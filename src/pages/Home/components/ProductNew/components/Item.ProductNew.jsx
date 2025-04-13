@@ -1,11 +1,11 @@
 import React from "react";
 import { CiHeart } from "react-icons/ci";
-import { formattedPrice } from "../../../../../utils/utils";
 import { Link } from "react-router-dom";
+import { formatCurrencyVND } from "../../../../../utils/utils";
 
 const ItemProductNew = ({ main_image, name, price, brand, id }) => {
   return (
-    <Link to={`product/${id}`} className="flex flex-col gap-2">
+    <Link to={`/product/${id}`} className="flex flex-col gap-2">
       <div>
         <img
           src={main_image}
@@ -20,7 +20,7 @@ const ItemProductNew = ({ main_image, name, price, brand, id }) => {
         </div>
       </div>
       <h3 className="font-semibold">{name}</h3>
-      <p className="text-price">{formattedPrice(price)}</p>
+      <p className="text-price">{formatCurrencyVND(price)}</p>
     </Link>
   );
 };

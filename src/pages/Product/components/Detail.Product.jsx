@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { CiHeart } from "react-icons/ci";
-import { formattedPrice } from "../../../utils/utils";
+import { formatCurrencyVND } from "../../../utils/utils";
+import { Button, InputNumber } from "antd";
+import { useDispatch } from "react-redux";
+import { handleUpdateCart } from "../../../store/slice/cart.slice";
 
 const mockup = [
   {
@@ -22,6 +25,39 @@ const mockup = [
 ];
 
 const DetailProduct = ({ product }) => {
+  const [quantity, setQuantity] = useState(1);
+
+  const dispatch = useDispatch();
+
+  const onChange = (value) => {
+    setQuantity(value);
+  };
+
+  const handleAddToCart = () => {
+    const newCartItem = {
+      quantity,
+      productId: product.id,
+    };
+
+    const existingCart = JSON.parse(localStorage.getItem("cart")) || [];
+
+    const index = existingCart.findIndex(
+      (item) => item.productId === newCartItem.productId
+    );
+
+    if (index !== -1) {
+      existingCart[index].quantity += newCartItem.quantity;
+    } else {
+      // Nếu chưa có → thêm mới
+      existingCart.push(newCartItem);
+    }
+
+    localStorage.setItem("cart", JSON.stringify(existingCart));
+
+    dispatch(handleUpdateCart(existingCart));
+
+    console.log("Cart updated:", existingCart);
+  };
   return (
     <div className="grid grid-cols-2 gap-10">
       <div className="flex gap-10">
@@ -59,7 +95,7 @@ const DetailProduct = ({ product }) => {
         </div>
 
         <h3 className="text-price text-2xl font-semibold">
-          {formattedPrice(product.price)}
+          {formatCurrencyVND(product.price)}
         </h3>
         <div>
           <img
@@ -88,6 +124,30 @@ const DetailProduct = ({ product }) => {
         <div>
           <span className="font-semibold">Màu sắc:</span>
           <span className="text-gray-500"> Đen</span>
+        </div>
+        <div className="flex gap-10 h-[40px]">
+          {product?.stock_quantity > 0 ? (
+            <>
+              <InputNumber
+                min={1}
+                max={3}
+                value={quantity}
+                onChange={onChange}
+                className="w-[200px] h-full text-lg"
+              />
+              <Button
+                type="default"
+                className="w-full h-full"
+                onClick={handleAddToCart}
+              >
+                Đặt vào giỏ hàng
+              </Button>
+            </>
+          ) : (
+            <Button type="default" disabled className="h-full">
+              Hết Hàng
+            </Button>
+          )}
         </div>
         <div className="flex justify-center items-center gap-2">
           <p>Hotline:</p>

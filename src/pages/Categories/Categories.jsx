@@ -1,19 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Pagination } from "antd"; // Import Pagination từ Ant Design
+import { Button, Input, Pagination, Select, Tag } from "antd"; // Import Pagination từ Ant Design
 import { productService } from "../../services/product.service";
 import BreadcrumbCustom from "../../components/Breadcrumb";
 import { pathDefault } from "../../common/path";
 import ItemProductNew from "../Home/components/ProductNew/components/Item.ProductNew";
 import LineSpace from "../../components/LineSpace";
+import { SORT_OPTIONS } from "../../common/constant";
 
 const Categories = () => {
   const { id } = useParams();
   const [listProduct, setListProduct] = useState([]);
   const [errorPage, setErrorPage] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
-  const [pageSize] = useState(8); // Số sản phẩm trên mỗi trang
-  const [totalProducts, setTotalProducts] = useState(0); // Tổng số sản phẩm
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(8);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(0);
+  const [submittedPrice, setSubmittedPrice] = useState({
+    min: 0,
+    max: 0,
+  });
+  const [tags, setTags] = useState([]);
+  const [selectedSort, setSelectedSort] = useState("newest");
 
   useEffect(() => {
     if (Number(+id) || id === "all") {
@@ -22,12 +31,15 @@ const Categories = () => {
           currentPage,
           pageSize,
           "",
-          id === "all" ? undefined : id
+          id === "all" ? undefined : id,
+          submittedPrice.min,
+          submittedPrice.max,
+          selectedSort
         )
         .then((res) => {
           console.log(res.data.metaData);
           setListProduct(res.data.metaData.items);
-          setTotalProducts(res.data.metaData.totalItem); // Lấy tổng số sản phẩm từ API
+          setTotalProducts(res.data.metaData.totalItem);
         })
         .catch(() => {
           setErrorPage(true);
@@ -35,7 +47,39 @@ const Categories = () => {
     } else {
       setErrorPage(true);
     }
-  }, [id, currentPage]); // Gọi lại API khi id hoặc currentPage thay đổi
+  }, [id, currentPage, submittedPrice, selectedSort]);
+
+  //Handle State cho tags
+  useEffect(() => {
+    const newTags = [];
+    if (submittedPrice.min) newTags.push(`Từ ${submittedPrice.min}`);
+    if (submittedPrice.max) newTags.push(`Đến ${submittedPrice.max}`);
+    setTags(newTags);
+  }, [submittedPrice]);
+
+  const handleClose = (removedTag) => {
+    const newTags = tags.filter((tag) => tag !== removedTag);
+    setTags(newTags);
+
+    let newSubmittedPrice = { ...submittedPrice };
+
+    if (removedTag.startsWith("Từ")) {
+      newSubmittedPrice.min = 0;
+      setMinPrice(0);
+    }
+    if (removedTag.startsWith("Đến")) {
+      newSubmittedPrice.max = 0;
+      setMaxPrice(0);
+    }
+
+    setSubmittedPrice(newSubmittedPrice);
+    setCurrentPage(1);
+  };
+
+  const handleChangeFilter = (value) => {
+    setSelectedSort(value);
+    setCurrentPage(1);
+  };
 
   if (errorPage) return <div className="text-center">Not Found</div>;
 
@@ -74,17 +118,99 @@ const Categories = () => {
             <div className="space-y-4">
               <LineSpace />
               <div>
-                <h3 className="uppercase">Mức giá</h3>
+                <h3 className="uppercase mb-6">Mức giá</h3>
+                <div className="flex gap-3 items-center">
+                  <Input
+                    type="number"
+                    placeholder="Từ"
+                    prefix=""
+                    suffix="đ"
+                    value={minPrice === 0 ? undefined : minPrice}
+                    onChange={(e) => {
+                      setMinPrice(e.target.value);
+                    }}
+                  />
+                  <span>-</span>
+                  <Input
+                    type="number"
+                    placeholder="Đến"
+                    prefix=""
+                    suffix="đ"
+                    value={maxPrice === 0 ? undefined : maxPrice}
+                    onChange={(e) => {
+                      setMaxPrice(e.target.value);
+                    }}
+                  />
+                </div>
+                <div className="mt-4 flex justify-center w-full">
+                  <Button
+                    type="primary"
+                    className="bg-black hover:!bg-black/80 w-full"
+                    onClick={() => {
+                      setSubmittedPrice({
+                        min: Number(minPrice),
+                        max: Number(maxPrice),
+                      });
+                      setCurrentPage(1);
+                    }}
+                  >
+                    Áp dụng
+                  </Button>
+                </div>
+              </div>
+              <LineSpace />
+              <div>
+                <Button
+                  className="mt-2 w-full"
+                  onClick={() => {
+                    setMinPrice(0);
+                    setMaxPrice(0);
+                    setSubmittedPrice({ min: 0, max: 0 });
+
+                    setCurrentPage(1);
+                  }}
+                >
+                  Xóa lọc
+                </Button>
               </div>
             </div>
           </div>
+
           {/* List Items */}
           <div className="col-span-4 grid grid-cols-4 gap-6">
+            <div className="col-span-4 flex items-center justify-between">
+              <div>
+                {tags.map((tag, index) => {
+                  return (
+                    <Tag
+                      closable
+                      onClose={(e) => {
+                        e.preventDefault();
+                        handleClose(tag);
+                      }}
+                      color="volcano"
+                    >
+                      {tag}
+                    </Tag>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2">
+                <span>Sắp xếp:</span>
+                <Select
+                  value={selectedSort}
+                  style={{ width: 120 }}
+                  onChange={handleChangeFilter}
+                  options={SORT_OPTIONS}
+                />
+              </div>
+            </div>
             {listProduct.map((item, index) => (
               <ItemProductNew key={index} {...item} />
             ))}
           </div>
         </div>
+
         {/* Pagination */}
         <div className="flex justify-center py-10">
           <Pagination
@@ -92,7 +218,7 @@ const Categories = () => {
             pageSize={pageSize}
             total={totalProducts}
             onChange={(page) => setCurrentPage(page)}
-            showSizeChanger={false} // Không cho thay đổi số sản phẩm mỗi trang
+            showSizeChanger={false}
           />
         </div>
       </div>

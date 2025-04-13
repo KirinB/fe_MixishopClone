@@ -15,7 +15,7 @@ const items = [
   {
     key: "2",
     label: <h3 className="text-xl px-6">Năng động mùa hè</h3>,
-    children: <ProductNewListProductHomePage />,
+    children: <ProductNewListProductHomePage typeId={8} />,
   },
 ];
 

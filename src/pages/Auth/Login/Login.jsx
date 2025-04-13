@@ -31,6 +31,14 @@ const Login = () => {
         .then((res) => {
           console.log(res.data.metaData);
           setMsgErr("");
+          localStorage.setItem(
+            "userInfo",
+            JSON.stringify(res.data.metaData.user)
+          );
+          localStorage.setItem(
+            "token",
+            JSON.stringify(res.data.metaData.access_token)
+          );
           dispatch(handleUpdateUser(res.data.metaData.user));
           dispatch(handleUpdateToken(res.data.metaData.access_token));
           handleNotification("success", "Đăng nhập thành công", 3000);

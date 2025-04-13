@@ -2,6 +2,7 @@ export const pathDefault = {
   homePage: "/",
   aboutUs: "/pages/about-us",
   contact: "/pages/contact",
+  cart: "/cart",
   categories: "/categories/:id",
   product: "product/:id",
   login: "/login",

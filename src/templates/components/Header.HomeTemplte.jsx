@@ -87,44 +87,50 @@ const HeaderHomeTemplte = () => {
             );
           })}
         </ul>
-        {user ? (
-          <Popover
-            content={
-              <div
-                className="flex flex-col gap-4 p-2
-              "
-              >
+        <div className="flex gap-4 items-center">
+          <IoSearchOutline size={20} />
+          <IoMdHeartEmpty size={20} />
+          <Link to={pathDefault.cart}>
+            <MdOutlineShoppingBag size={20} />
+          </Link>
+          {user ? (
+            <Popover
+              content={
                 <div
-                  className="cursor-pointer hover:text-price"
-                  onClick={() => {
-                    dispatch(handleDeleteUser());
-                  }}
+                  className="flex flex-col gap-4 p-2
+                "
                 >
-                  Đăng xuất
-                </div>
-                {user.role === "Admin" ? (
-                  <Link
-                    to={pathDefault.admin}
+                  <div
                     className="cursor-pointer hover:text-price"
+                    onClick={() => {
+                      localStorage.removeItem("userInfo");
+                      localStorage.removeItem("token");
+                      dispatch(handleDeleteUser());
+                    }}
                   >
-                    Admin DashBoard
-                  </Link>
-                ) : null}
-              </div>
-            }
-            trigger={"click"}
-            className="cursor-pointer"
-          >
-            <Avatar
-              style={{ backgroundColor: "#fde3cf", color: "#f56a00" }}
-              className="!border border-gray-300"
+                    Đăng xuất
+                  </div>
+                  {user.role === "Admin" ? (
+                    <Link
+                      to={pathDefault.admin}
+                      className="cursor-pointer hover:text-price"
+                    >
+                      Admin DashBoard
+                    </Link>
+                  ) : null}
+                </div>
+              }
+              trigger={"click"}
+              className="cursor-pointer"
             >
-              {user.name.split(" ").pop().charAt(0)}
-            </Avatar>
-          </Popover>
-        ) : (
-          <div className="flex gap-4">
-            <IoSearchOutline size={20} />
+              <Avatar
+                style={{ backgroundColor: "#fde3cf", color: "#f56a00" }}
+                className="!border border-gray-300"
+              >
+                {user.name.split(" ").pop().charAt(0)}
+              </Avatar>
+            </Popover>
+          ) : (
             <Popover
               className="cursor-pointer"
               trigger={"click"}
@@ -141,10 +147,8 @@ const HeaderHomeTemplte = () => {
             >
               <FaRegUser size={20} />
             </Popover>
-            <IoMdHeartEmpty size={20} />
-            <MdOutlineShoppingBag size={20} />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </header>
   );

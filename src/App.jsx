@@ -14,6 +14,8 @@ import ManagerProduct from "./pages/Admin/ManagerProudct/ManagerProduct";
 import PostManagerProduct from "./pages/Admin/ManagerProudct/Post/Post.Manager.Product";
 import Contact from "./pages/Contact/Contact";
 import Categories from "./pages/Categories/Categories";
+import Cart from "./pages/Cart/Cart";
+import ScrollToTop from "./hooks/useScrollToTop";
 
 const arrRoutes = [
   {
@@ -48,6 +50,10 @@ const arrRoutes = [
         path: pathDefault.categories,
         element: <Categories />,
       },
+      {
+        path: pathDefault.cart,
+        element: <Cart />,
+      },
     ],
   },
   {
@@ -78,6 +84,7 @@ function App() {
   const routes = useRoutes(arrRoutes);
   return (
     <>
+      <ScrollToTop />
       <NotificationProvider>{routes}</NotificationProvider>
     </>
   );
