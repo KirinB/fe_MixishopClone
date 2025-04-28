@@ -4,6 +4,7 @@ import { formatCurrencyVND } from "../../../utils/utils";
 import { Button, InputNumber } from "antd";
 import { useDispatch } from "react-redux";
 import { handleUpdateCart } from "../../../store/slice/cart.slice";
+import { useNotificationContext } from "../../../store/Notification.Context";
 
 const mockup = [
   {
@@ -26,6 +27,8 @@ const mockup = [
 
 const DetailProduct = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
+
+  const { handleNotification } = useNotificationContext();
 
   const dispatch = useDispatch();
 
@@ -55,6 +58,8 @@ const DetailProduct = ({ product }) => {
     localStorage.setItem("cart", JSON.stringify(existingCart));
 
     dispatch(handleUpdateCart(existingCart));
+
+    handleNotification(`success`, `Đặt vào giỏ hàng thành công`);
 
     console.log("Cart updated:", existingCart);
   };

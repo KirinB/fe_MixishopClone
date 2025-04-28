@@ -74,7 +74,6 @@ const ManagerUser = () => {
     console.log("Chỉnh sửa user:", user);
     setInfoUser(user);
     setIsModalFixUser(true);
-    // TODO: Hiển thị modal sửa user
   };
 
   //  Hàm Xóa user
@@ -118,8 +117,8 @@ const ManagerUser = () => {
       dataIndex: "gender",
       key: "gender",
       filters: [
-        { text: "Nam", value: "Male" },
-        { text: "Nữ", value: "Female" },
+        { text: "Nam", value: "Nam" },
+        { text: "Nữ", value: "Nữ" },
       ],
       onFilter: (value, record) => record.gender === value,
     },
@@ -152,7 +151,6 @@ const ManagerUser = () => {
       <div className="flex justify-end mb-4">
         <Button
           type="primary"
-          size="large"
           onClick={() => {
             setIsModalAddUser(true);
           }}

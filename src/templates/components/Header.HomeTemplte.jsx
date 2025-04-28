@@ -1,23 +1,32 @@
-import { Avatar, Popover } from "antd";
+import { Avatar, Badge, Popover } from "antd";
 import React, { useState } from "react";
 import { FaRegUser } from "react-icons/fa";
 import { IoMdHeartEmpty } from "react-icons/io";
 import { IoSearchOutline } from "react-icons/io5";
 import { MdOutlineShoppingBag } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { pathDefault } from "../../common/path";
 import { handleDeleteUser } from "../../store/slice/user.slice";
+import SearchModalHeaderHomeTemplate from "./SearchModal.Header.HomeTemplate";
 
 const HeaderHomeTemplte = () => {
   const { user } = useSelector((state) => state.userSlice);
+  const { cart } = useSelector((state) => state.cartSlice);
+
+  const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
   const { data } = useSelector((state) => state.categoriesSlice);
   // console.log(data);
   const [isOpen, setIsOpen] = useState(false);
+  const [showSearchBar, setShowSearchBar] = useState(false);
+
   const dispatch = useDispatch();
+
+  const navigate = useNavigate();
 
   const dropdownItems = data.map((item) => {
     return {
+      key: "categories",
       title: item.name,
       link: `/categories/${item.id}`,
     };
@@ -88,11 +97,20 @@ const HeaderHomeTemplte = () => {
           })}
         </ul>
         <div className="flex gap-4 items-center">
-          <IoSearchOutline size={20} />
-          <IoMdHeartEmpty size={20} />
-          <Link to={pathDefault.cart}>
-            <MdOutlineShoppingBag size={20} />
-          </Link>
+          <IoSearchOutline
+            onClick={() => setShowSearchBar(true)}
+            className="cursor-pointer"
+            size={20}
+          />
+
+          <IoMdHeartEmpty size={20} className="cursor-pointer" />
+
+          <Badge count={totalQuantity} offset={[0, 1]}>
+            <Link to={pathDefault.cart} className="hover:text-current">
+              <MdOutlineShoppingBag size={20} />
+            </Link>
+          </Badge>
+
           {user ? (
             <Popover
               content={
@@ -100,12 +118,14 @@ const HeaderHomeTemplte = () => {
                   className="flex flex-col gap-4 p-2
                 "
                 >
+                  <Link to={pathDefault.account}>Tài khoản</Link>
                   <div
                     className="cursor-pointer hover:text-price"
                     onClick={() => {
                       localStorage.removeItem("userInfo");
                       localStorage.removeItem("token");
                       dispatch(handleDeleteUser());
+                      navigate(pathDefault.homePage);
                     }}
                   >
                     Đăng xuất
@@ -125,7 +145,7 @@ const HeaderHomeTemplte = () => {
             >
               <Avatar
                 style={{ backgroundColor: "#fde3cf", color: "#f56a00" }}
-                className="!border border-gray-300"
+                className="!border border-gray-300 uppercase"
               >
                 {user.name.split(" ").pop().charAt(0)}
               </Avatar>
@@ -150,6 +170,11 @@ const HeaderHomeTemplte = () => {
           )}
         </div>
       </div>
+      {showSearchBar && (
+        <SearchModalHeaderHomeTemplate
+          onClose={() => setShowSearchBar(false)}
+        />
+      )}
     </header>
   );
 };

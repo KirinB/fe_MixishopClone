@@ -16,6 +16,11 @@ import Contact from "./pages/Contact/Contact";
 import Categories from "./pages/Categories/Categories";
 import Cart from "./pages/Cart/Cart";
 import ScrollToTop from "./hooks/useScrollToTop";
+import PaymentResult from "./pages/PaymentResult/PaymentResult";
+import AccountPage from "./pages/Account/AccountPage";
+import SearchPage from "./pages/Search/SearchPage";
+import ManagerProductType from "./pages/Admin/ManagerProductType/ManagerProductType";
+import ManagerOrder from "./pages/Admin/ManagerOrder/ManagerOrder";
 
 const arrRoutes = [
   {
@@ -54,6 +59,18 @@ const arrRoutes = [
         path: pathDefault.cart,
         element: <Cart />,
       },
+      {
+        path: pathDefault.paymentResult,
+        element: <PaymentResult />,
+      },
+      {
+        path: pathDefault.account,
+        element: <AccountPage />,
+      },
+      {
+        path: pathDefault.search,
+        element: <SearchPage />,
+      },
     ],
   },
   {
@@ -75,6 +92,14 @@ const arrRoutes = [
       {
         path: pathDefault.managerPostProduct,
         element: <PostManagerProduct />,
+      },
+      {
+        path: pathDefault.managerProductType,
+        element: <ManagerProductType />,
+      },
+      {
+        path: pathDefault.managerOrder,
+        element: <ManagerOrder />,
       },
     ],
   },

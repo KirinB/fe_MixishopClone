@@ -3,19 +3,39 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { productService } from "../../services/product.service";
 import { formatCurrencyVND } from "../../utils/utils";
-import { Link } from "react-router-dom";
-import { removeFromCart, updateQuantity } from "../../store/slice/cart.slice";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  clearCart,
+  removeFromCart,
+  updateQuantity,
+} from "../../store/slice/cart.slice";
 import { IoClose } from "react-icons/io5";
 import LineSpace from "../../components/LineSpace";
+import { orderService } from "../../services/order.service";
+import { useNotificationContext } from "../../store/Notification.Context";
+import { pathDefault } from "../../common/path";
 
 const InfoProductCart = () => {
   const dispatch = useDispatch();
+  const { user, token } = useSelector((state) => state.userSlice);
   const { cart } = useSelector((state) => state.cartSlice);
+
+  const { handleNotification } = useNotificationContext();
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [totalPrice, setTotalPrice] = useState(0);
   const [listProduct, setListProduct] = useState([]);
 
   useEffect(() => {
     const ids = cart.map((item) => item.productId);
+
+    if (ids.length === 0) {
+      setListProduct([]);
+      return;
+    }
+
     const data = { ids };
     productService
       .getProductByIds(data)
@@ -27,12 +47,18 @@ const InfoProductCart = () => {
           return { ...product, quantity: cartItem?.quantity || 1 };
         });
         setListProduct(updatedList);
-        setTotalPrice(res.data.metaData.totalPrice);
       })
       .catch((err) => {
         console.log(err);
       });
   }, [cart]);
+
+  useEffect(() => {
+    const total = listProduct.reduce((sum, item) => {
+      return sum + item.price * item.quantity;
+    }, 0);
+    setTotalPrice(total);
+  }, [listProduct]);
 
   const handleQuantityChange = (productId, value) => {
     dispatch(updateQuantity({ productId, quantity: value }));
@@ -42,10 +68,34 @@ const InfoProductCart = () => {
     dispatch(removeFromCart(productId));
   };
 
+  const handleSubmitCart = () => {
+    if (!user || !token) {
+      handleNotification(`error`, `Vui lòng đăng nhập trước khi thanh toán`);
+      navigate(pathDefault.login, { state: { from: location.pathname } });
+      return;
+    }
+
+    const data = {
+      items: cart.map((item) => ({
+        product_id: item.productId,
+        quantity: item.quantity,
+      })),
+    };
+
+    orderService
+      .createOrder(data, token)
+      .then((res) => {
+        const { payUrl } = res.data.metaData;
+        dispatch(clearCart());
+        window.location.href = payUrl;
+      })
+      .catch((err) => console.log(err));
+  };
+
   return (
     <div className="py-10 container">
       <h2 className="text-2xl font-semibold">Giỏ hàng</h2>
-      <div className="grid grid-cols-[3fr_1fr] gap-10 items-start">
+      <div className="grid grid-cols-[3fr_1fr] gap-10 items-start py-10">
         {/* Danh sách giỏ hàng */}
         <div className="flex flex-col gap-4">
           {listProduct.map((product, index) => (
@@ -115,6 +165,7 @@ const InfoProductCart = () => {
               type="primary"
               className="bg-black hover:!bg-black/80 !text-white w-full"
               size="large"
+              onClick={handleSubmitCart}
             >
               Thanh Toán
             </Button>

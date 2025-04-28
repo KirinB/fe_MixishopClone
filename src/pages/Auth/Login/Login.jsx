@@ -9,13 +9,13 @@ import {
   handleUpdateToken,
   handleUpdateUser,
 } from "../../../store/slice/user.slice";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [msgErr, setMsgErr] = useState("");
 
   const navigate = useNavigate();
-
+  const location = useLocation();
   const { handleNotification } = useNotificationContext();
 
   const dispatch = useDispatch();
@@ -43,7 +43,8 @@ const Login = () => {
           dispatch(handleUpdateToken(res.data.metaData.access_token));
           handleNotification("success", "Đăng nhập thành công", 3000);
           setTimeout(() => {
-            navigate(pathDefault.homePage);
+            const redirectTo = location.state?.from || pathDefault.homePage;
+            navigate(redirectTo, { replace: true });
           }, 3000);
         })
         .catch((err) => {

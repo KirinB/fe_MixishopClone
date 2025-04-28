@@ -17,7 +17,7 @@ const Cart = () => {
       />
 
       <div className="container">
-        {cart ? (
+        {cart.length > 0 ? (
           <>
             <InfoProductCart />
           </>

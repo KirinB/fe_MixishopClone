@@ -29,4 +29,21 @@ export const productService = {
       },
     });
   },
+
+  delete: (id, token) => {
+    return http.delete(`/product/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  updateById: (id, data, token) => {
+    return http.patch(`/product/${id}`, data, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
 };
