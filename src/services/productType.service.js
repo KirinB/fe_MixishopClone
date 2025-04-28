@@ -38,3 +38,33 @@ export const productTypeService = {
     });
   },
 };
+
+export const productTypeQueries = {
+  getProductTypes: {
+    queryKey: "getProductTypes",
+    queryFunction: ({ token, page, pageSize, search }) => {
+      return productTypeService.getList(token, page, pageSize, search);
+    },
+  },
+
+  createProductType: {
+    queryKey: "createProductType",
+    queryFunction: ({ token, data }) => {
+      return productTypeService.add(token, data);
+    },
+  },
+
+  updateProductType: {
+    queryKey: "updateProductType",
+    queryFunction: ({ token, id, data }) => {
+      return productTypeService.update(token, id, data);
+    },
+  },
+
+  deleteProductType: {
+    queryKey: "deleteProductType",
+    queryFunction: ({ token, id }) => {
+      return productTypeService.delete(token, id);
+    },
+  },
+};

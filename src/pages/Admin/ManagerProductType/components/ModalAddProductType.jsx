@@ -6,13 +6,22 @@ import { useFormik } from "formik";
 import { InputCustom } from "../../../../components/InputCustom";
 import { Button, Upload } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { productTypeService } from "../../../../services/productType.service";
+import {
+  productTypeQueries,
+  productTypeService,
+} from "../../../../services/productType.service";
+import useMutate from "../../../../hooks/api/useMutate";
+import queryClient from "../../../../hooks/api/queryConfig";
 
-const ModalAddProductType = () => {
+const ModalAddProductType = ({ setIsModalAddProductType }) => {
   const { token } = useSelector((state) => state.userSlice);
   const { handleNotification } = useNotificationContext();
 
   const [fileList, setFileList] = useState([]);
+
+  const { mutate: createProductType } = useMutate({
+    mutationFunction: productTypeQueries.createProductType.queryFunction,
+  });
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -38,15 +47,32 @@ const ModalAddProductType = () => {
 
       console.log("formData submit:", values);
 
-      productTypeService
-        .add(token, formData)
-        .then((res) => {
-          console.log(res);
-          handleNotification("success", "Tạo mới kiểu sản phẩm thành công");
-        })
-        .catch((err) => {
-          console.log(err);
-        });
+      createProductType(
+        {
+          token,
+          data: formData,
+        },
+        {
+          onSuccess: () => {
+            handleNotification("success", "Tạo mới kiểu sản phẩm thành công");
+            queryClient.invalidateQueries(["getProductTypes"]);
+            setIsModalAddProductType(false);
+          },
+          onError: () => {
+            handleNotification("error", "Tạo mới kiểu sản phẩm thất bại");
+          },
+        }
+      );
+
+      // productTypeService
+      //   .add(token, formData)
+      //   .then((res) => {
+      //     console.log(res);
+      //     handleNotification("success", "Tạo mới kiểu sản phẩm thành công");
+      //   })
+      //   .catch((err) => {
+      //     console.log(err);
+      //   });
     },
   });
 

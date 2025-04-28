@@ -47,3 +47,46 @@ export const productService = {
     });
   },
 };
+
+export const productQueries = {
+  getProducts: {
+    queryKey: "getProducts",
+    queryFunction: ({
+      page,
+      pageSize,
+      search,
+      typeId,
+      minPrice,
+      maxPrice,
+      sortBy,
+    }) => {
+      return productService.getListProduct(
+        page,
+        pageSize,
+        search,
+        typeId,
+        minPrice,
+        maxPrice,
+        sortBy
+      );
+    },
+  },
+  createProduct: {
+    queryKey: "createProduct",
+    queryFunction: ({ data, token }) => {
+      return productService.create(data, token);
+    },
+  },
+  updateProduct: {
+    queryKey: "updateProduct",
+    queryFunction: ({ id, data, token }) => {
+      return productService.updateById(id, data, token);
+    },
+  },
+  deleteProduct: {
+    queryKey: "deleteProduct",
+    queryFunction: ({ id, token }) => {
+      return productService.delete(id, token);
+    },
+  },
+};

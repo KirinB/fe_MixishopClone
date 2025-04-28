@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { orderService } from "../../../services/order.service";
+import { orderQueries, orderService } from "../../../services/order.service";
 import { Button, Modal, Popconfirm, Table } from "antd";
 import { InputCustom } from "../../../components/InputCustom";
 import { useNotificationContext } from "../../../store/Notification.Context";
 import ModalUpdateOrder from "./components/ModalUpdateOrder";
+import useGetQuery from "../../../hooks/api/useQuery";
+import useMutate from "../../../hooks/api/useMutate";
+import queryClient from "../../../hooks/api/queryConfig";
 
 const ManagerOrder = () => {
   const { token } = useSelector((state) => state.userSlice);
@@ -18,52 +21,81 @@ const ManagerOrder = () => {
     pageSize: 10,
     total: 0,
   });
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   const [valueInput, setValueInput] = useState("");
   const [search, setSearch] = useState("");
 
-  const fetchOrderData = (page, pageSize, search = "") => {
-    setIsLoading(true);
-    orderService
-      .getList(token, page, pageSize, search)
-      .then((res) => {
-        const { page, pageSize, totalItem, items } = res.data.metaData;
-        console.log({ items });
-        setListOrder((prev) => {
-          console.log(prev);
-          const result = items.map((order) => {
-            return { ...order, email: order.user.email };
-          });
-          return result;
-        });
-        setPagination({
-          pageSize,
-          current: page,
-          total: totalItem,
-        });
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => setIsLoading(false));
-  };
+  const { data: rawOrder, isLoading } = useGetQuery({
+    queryInfo: orderQueries.getOrders,
+    body: {
+      token,
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+      search,
+    },
+  });
 
   useEffect(() => {
-    fetchOrderData(pagination.current, pagination.pageSize);
-  }, []);
+    if (rawOrder) {
+      const { items = [], totalItem = 0, page, pageSize } = rawOrder;
+      const formattedData = items.map((order) => ({
+        key: order.id,
+        email: order.user.email,
+        ...order,
+      }));
 
-  useEffect(() => {
-    if (search !== "") {
-      fetchOrderData(1, pagination.pageSize, search);
+      setListOrder(formattedData);
+
+      setPagination({
+        current: page,
+        pageSize,
+        total: totalItem,
+      });
     }
-  }, [search]);
+  }, [rawOrder]);
+
+  // const fetchOrderData = (page, pageSize, search = "") => {
+  //   setIsLoading(true);
+  //   orderService
+  //     .getList(token, page, pageSize, search)
+  //     .then((res) => {
+  //       const { page, pageSize, totalItem, items } = res.data.metaData;
+  //       console.log({ items });
+  //       setListOrder((prev) => {
+  //         console.log(prev);
+  //         const result = items.map((order) => {
+  //           return { ...order, email: order.user.email };
+  //         });
+  //         return result;
+  //       });
+  //       setPagination({
+  //         pageSize,
+  //         current: page,
+  //         total: totalItem,
+  //       });
+  //     })
+  //     .catch((err) => {
+  //       console.log(err);
+  //     })
+  //     .finally(() => setIsLoading(false));
+  // };
+
+  // useEffect(() => {
+  //   fetchOrderData(pagination.current, pagination.pageSize);
+  // }, []);
+
+  //   useEffect(() => {
+  //     if (search !== "") {
+  //       fetchOrderData(1, pagination.pageSize, search);
+  //     }
+  // }, [search]);
 
   const handleTableChange = (pagination) => {
     setPagination({
       current: pagination.current,
       pageSize: pagination.pageSize,
     });
-    fetchOrderData(pagination.current, pagination.pageSize, search);
+    // fetchOrderData(pagination.current, pagination.pageSize, search);
   };
 
   const handleEdit = (order) => {
@@ -72,16 +104,35 @@ const ManagerOrder = () => {
     setIsOpenModalUpdate(true);
   };
 
+  const { mutate: deleteOrder } = useMutate({
+    mutationFunction: orderQueries.deleteOrder.queryFunction,
+  });
+
   const handleDelete = async (orderId) => {
     console.log({ orderId });
-    try {
-      await orderService.delete(token, orderId);
-      handleNotification("success", `Xóa thành công đơn hàng`);
-      fetchOrderData(pagination.current, pagination.pageSize, search);
-    } catch (error) {
-      handleNotification("error", "Xóa không thành công");
-      fetchOrderData(pagination.current, pagination.pageSize, search);
-    }
+    deleteOrder(
+      {
+        token,
+        id: orderId,
+      },
+      {
+        onSuccess: () => {
+          handleNotification("success", "Xóa đơn hàng thành công");
+          queryClient.invalidateQueries(["getOrders"]);
+        },
+        onError: () => {
+          handleNotification("error", "Xóa đơn hàng thất bại");
+        },
+      }
+    );
+    // try {
+    //   await orderService.delete(token, orderId);
+    //   handleNotification("success", `Xóa thành công đơn hàng`);
+    //   fetchOrderData(pagination.current, pagination.pageSize, search);
+    // } catch (error) {
+    //   handleNotification("error", "Xóa không thành công");
+    //   fetchOrderData(pagination.current, pagination.pageSize, search);
+    // }
   };
 
   const columns = [
@@ -181,7 +232,7 @@ const ManagerOrder = () => {
       >
         <ModalUpdateOrder
           order={order}
-          fetchOrderData={fetchOrderData}
+          // fetchOrderData={fetchOrderData}
           pagination={pagination}
           setIsModalUpdateOrder={setIsOpenModalUpdate}
         />

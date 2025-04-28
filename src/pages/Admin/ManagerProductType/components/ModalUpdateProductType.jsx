@@ -6,7 +6,12 @@ import { useFormik } from "formik";
 import { InputCustom } from "../../../../components/InputCustom";
 import { Button, Upload } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { productTypeService } from "../../../../services/productType.service";
+import {
+  productTypeQueries,
+  productTypeService,
+} from "../../../../services/productType.service";
+import useMutate from "../../../../hooks/api/useMutate";
+import queryClient from "../../../../hooks/api/queryConfig";
 
 const ModalUpdateProductType = ({
   productType,
@@ -60,6 +65,10 @@ const ModalUpdateProductType = ({
       }),
   });
 
+  const { mutate: updateProductType } = useMutate({
+    mutationFunction: productTypeQueries.updateProductType.queryFunction,
+  });
+
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -78,18 +87,36 @@ const ModalUpdateProductType = ({
 
       console.log(formData);
 
-      productTypeService
-        .update(token, productType.id, formData)
-        .then((res) => {
-          console.log(res);
-          fetchProductType(pagination.current, pagination.pageSize);
-          handleNotification("success", "Cập nhật thành công");
-          setIsModalUpdateProductType(false);
-        })
-        .catch((err) => {
-          console.log(err);
-          handleNotification("error", "Có gì đó không đúng");
-        });
+      updateProductType(
+        {
+          token,
+          id: productType.id,
+          data: formData,
+        },
+        {
+          onSuccess: () => {
+            handleNotification("success", "Cập nhật thành công");
+            queryClient.invalidateQueries(["getProductTypes"]);
+            setIsModalUpdateProductType(false);
+          },
+          onError: () => {
+            handleNotification("error", "Cập nhật thất bại");
+          },
+        }
+      );
+
+      // productTypeService
+      //   .update(token, productType.id, formData)
+      //   .then((res) => {
+      //     console.log(res);
+      //     fetchProductType(pagination.current, pagination.pageSize);
+      //     handleNotification("success", "Cập nhật thành công");
+      //     setIsModalUpdateProductType(false);
+      //   })
+      //   .catch((err) => {
+      //     console.log(err);
+      //     handleNotification("error", "Có gì đó không đúng");
+      //   });
     },
   });
 

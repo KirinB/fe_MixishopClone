@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { Table, Button, Popconfirm, message, Modal } from "antd";
-import { userService } from "../../../services/user.service";
+import { userQueries, userService } from "../../../services/user.service";
 import { useSelector } from "react-redux";
 import ModalFixUser from "./components/ModalFixUser";
 import { useNotificationContext } from "../../../store/Notification.Context";
 import ModalAddUser from "./components/ModalAddUser";
+import useGetQuery from "../../../hooks/api/useQuery";
+import useMutate from "../../../hooks/api/useMutate";
+import { useQueryClient } from "@tanstack/react-query";
+import queryClient from "../../../hooks/api/queryConfig";
 
 const ManagerUser = () => {
   const { handleNotification } = useNotificationContext();
   const { token } = useSelector((state) => state.userSlice);
   const [userData, setUserData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 5,
@@ -20,53 +24,76 @@ const ManagerUser = () => {
   const [isModalAddUser, setIsModalAddUser] = useState(false);
   const [infoUser, setInfoUser] = useState([]);
 
-  const [reRender, setReRender] = useState(false);
+  // const fetchUsers = (page, pageSize) => {
+  //   setLoading(true);
+  //   userService
+  //     .getListUser(token, page, pageSize)
+  //     .then((res) => {
+  //       const { items, totalItem } = res.data.metaData;
 
-  // Render lại table
+  //       const formattedData = items.map((user) => ({
+  //         key: user.id,
+  //         name: user.name,
+  //         email: user.email,
+  //         phone: user.phone || "N/A",
+  //         gender: user.gender || "N/A",
+  //         role: user.role,
+  //       }));
+
+  //       setUserData(formattedData);
+  //       setPagination((prev) => ({
+  //         ...prev,
+  //         total: totalItem,
+  //       }));
+  //     })
+  //     .catch((err) => {
+  //       console.error("Lỗi khi lấy danh sách user:", err);
+  //     })
+  //     .finally(() => {
+  //       setLoading(false);
+  //     });
+  // };
+
+  const { data: rawUserData, isFetching: isLoadingusers } = useGetQuery({
+    queryInfo: userQueries.getUsers,
+    body: {
+      token,
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    },
+  });
+
   useEffect(() => {
-    if (reRender) {
-      fetchUsers(pagination.current, pagination.pageSize);
-      setReRender(false);
+    if (rawUserData) {
+      const { items = [], totalItem = 0 } = rawUserData;
+
+      const formattedData = items.map((user) => ({
+        key: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || "N/A",
+        gender: user.gender || "N/A",
+        role: user.role,
+      }));
+
+      setUserData(formattedData);
+
+      setPagination((prev) => ({
+        ...prev,
+        total: totalItem,
+      }));
     }
-  }, [reRender]);
+  }, [rawUserData]);
 
-  const fetchUsers = (page, pageSize) => {
-    setLoading(true);
-    userService
-      .getListUser(token, page, pageSize)
-      .then((res) => {
-        const { items, totalItem } = res.data.metaData;
+  // console.log({ users });
 
-        const formattedData = items.map((user) => ({
-          key: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone || "N/A",
-          gender: user.gender || "N/A",
-          role: user.role,
-        }));
-
-        setUserData(formattedData);
-        setPagination((prev) => ({
-          ...prev,
-          total: totalItem,
-        }));
-      })
-      .catch((err) => {
-        console.error("Lỗi khi lấy danh sách user:", err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
-
-  useEffect(() => {
-    fetchUsers(pagination.current, pagination.pageSize);
-  }, [token]);
+  // useEffect(() => {
+  //   fetchUsers(pagination.current, pagination.pageSize);
+  // }, [token]);
 
   const handleTableChange = (pagination) => {
     setPagination(pagination);
-    fetchUsers(pagination.current, pagination.pageSize);
+    // fetchUsers(pagination.current, pagination.pageSize);
   };
 
   //  Hàm Sửa user
@@ -76,18 +103,32 @@ const ManagerUser = () => {
     setIsModalFixUser(true);
   };
 
+  const { mutate: deleteUser } = useMutate({
+    mutationFunction: userQueries.deleteUser.queryFunction,
+  });
   //  Hàm Xóa user
   const handleDelete = (userId) => {
-    userService
-      .deleteUserById(userId, token)
-      .then(() => {
-        handleNotification("success", "Xóa người dùng thành công");
-        setReRender(true);
-      })
-      .catch((err) => {
-        handleNotification("error", "Xóa người dùng thất bại");
-        setReRender(true);
-      });
+    deleteUser(
+      { id: userId, token },
+      {
+        onSuccess: () => {
+          handleNotification("success", "Xóa người dùng thành công");
+          queryClient.invalidateQueries(["getUsers"]);
+        },
+        onError: (err) => {
+          console.log(err);
+          handleNotification("error", "Xóa người dùng thất bại");
+        },
+      }
+    );
+    // userService
+    //   .deleteUserById(userId, token)
+    //   .then(() => {
+    //     handleNotification("success", "Xóa người dùng thành công");
+    //   })
+    //   .catch((err) => {
+    //     handleNotification("error", "Xóa người dùng thất bại");
+    //   });
   };
 
   const columns = [
@@ -161,7 +202,7 @@ const ManagerUser = () => {
       <Table
         columns={columns}
         dataSource={userData}
-        loading={loading}
+        loading={isLoadingusers}
         pagination={pagination}
         onChange={handleTableChange}
       />
@@ -174,11 +215,7 @@ const ManagerUser = () => {
           setIsModalFixUser(false);
         }}
       >
-        <ModalFixUser
-          user={infoUser}
-          setReRender={setReRender}
-          setIsModalFixUser={setIsModalFixUser}
-        />
+        <ModalFixUser user={infoUser} setIsModalFixUser={setIsModalFixUser} />
       </Modal>
 
       <Modal
@@ -190,10 +227,7 @@ const ManagerUser = () => {
           setIsModalAddUser(false);
         }}
       >
-        <ModalAddUser
-          setReRender={setReRender}
-          setIsModalAddUser={setIsModalAddUser}
-        />
+        <ModalAddUser setIsModalAddUser={setIsModalAddUser} />
       </Modal>
     </>
   );

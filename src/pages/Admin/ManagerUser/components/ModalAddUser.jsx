@@ -6,12 +6,18 @@ import {
   InputPasswordCustom,
 } from "../../../../components/InputCustom";
 import * as yup from "yup";
-import { userService } from "../../../../services/user.service";
+import { userQueries, userService } from "../../../../services/user.service";
 import { useSelector } from "react-redux";
 import { useNotificationContext } from "../../../../store/Notification.Context";
-const ModalAddUser = ({ setReRender, setIsModalAddUser }) => {
+import useMutate from "../../../../hooks/api/useMutate";
+import queryClient from "../../../../hooks/api/queryConfig";
+const ModalAddUser = ({ setIsModalAddUser }) => {
   const { handleNotification } = useNotificationContext();
   const { token } = useSelector((state) => state.userSlice);
+
+  const { mutate: createUser } = useMutate({
+    mutationFunction: userQueries.createUser.queryFunction,
+  });
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -41,18 +47,32 @@ const ModalAddUser = ({ setReRender, setIsModalAddUser }) => {
     }),
     onSubmit: async (values) => {
       console.log(values);
-      userService
-        .addNewUser(values, token)
-        .then((res) => {
-          console.log(res);
-          handleNotification("success", "Tạo mới người dùng thành công");
-          setReRender(true);
-          setIsModalAddUser(false);
-        })
-        .catch((err) => {
-          handleNotification("error", err.response.data.message);
-          setIsModalAddUser(false);
-        });
+      createUser(
+        { data: values, token },
+        {
+          onSuccess: () => {
+            handleNotification("success", "Tạo mới người dùng thành công");
+            queryClient.invalidateQueries(["getUsers"]);
+            setIsModalAddUser(false);
+          },
+          onError: () => {
+            handleNotification("error", "Tạo mới người dùng thất bại");
+            setIsModalAddUser(false);
+          },
+        }
+      );
+      // userService
+      //   .addNewUser(values, token)
+      //   .then((res) => {
+      //     console.log(res);
+      //     handleNotification("success", "Tạo mới người dùng thành công");
+      //     setReRender(true);
+      //     setIsModalAddUser(false);
+      //   })
+      //   .catch((err) => {
+      //     handleNotification("error", err.response.data.message);
+      //     setIsModalAddUser(false);
+      //   });
     },
   });
   return (

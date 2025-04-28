@@ -1,12 +1,18 @@
 import { Button, Modal, Popconfirm, Table } from "antd";
 import React, { useEffect, useState } from "react";
-import { productService } from "../../../services/product.service";
+import {
+  productQueries,
+  productService,
+} from "../../../services/product.service";
 import { formatCurrencyVND } from "../../../utils/utils";
 import { useSelector } from "react-redux";
 import { useNotificationContext } from "../../../store/Notification.Context";
 import EditProductModal from "./EditProductModal/EditProductModal";
 import { useNavigate } from "react-router-dom";
 import { pathDefault } from "../../../common/path";
+import useGetQuery from "../../../hooks/api/useQuery";
+import useMutate from "../../../hooks/api/useMutate";
+import queryClient from "../../../hooks/api/queryConfig";
 
 const ManagerProduct = () => {
   const { token } = useSelector((state) => state.userSlice);
@@ -20,7 +26,7 @@ const ManagerProduct = () => {
     pageSize: 5,
     total: 0,
   });
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [listProduct, setListProduct] = useState([]);
   const [product, setProduct] = useState({});
 
@@ -87,60 +93,108 @@ const ManagerProduct = () => {
     },
   ];
 
-  const fetchData = (page = 1, pageSize = 5) => {
-    setLoading(true);
-    productService
-      .getListProduct(page, pageSize)
-      .then((res) => {
-        console.log(res.data.metaData);
-        const { page, items, pageSize, totalItem } = res.data.metaData;
-        const data = items.map((item) => {
-          return {
-            key: item.id,
-            image: item.main_image,
-            name: item.name,
-            price: item.price,
-            product_type: item.product_type.name,
-            stockQuantity: item.stock_quantity,
-            ...item,
-          };
-        });
-        setListProduct(data);
-        setPagination({
-          current: page,
-          pageSize,
-          total: totalItem,
-        });
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => setLoading(false));
-  };
+  const { data: rawProducts, isLoading: loading } = useGetQuery({
+    queryInfo: productQueries.getProducts,
+    body: {
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    },
+  });
+
+  useEffect(() => {
+    if (rawProducts) {
+      const { items = [], totalItem = 0 } = rawProducts;
+
+      const formattedData = items.map((product) => ({
+        key: product.id,
+        image: product.main_image,
+        name: product.name,
+        price: product.price,
+        product_type: product.product_type.name,
+        stockQuantity: product.stock_quantity,
+        ...product,
+      }));
+
+      setListProduct(formattedData);
+
+      setPagination({
+        current: rawProducts.page,
+        pageSize: rawProducts.pageSize,
+        total: totalItem,
+      });
+    }
+  }, [rawProducts]);
+
+  // const fetchData = (page = 1, pageSize = 5) => {
+  //   setLoading(true);
+  //   productService
+  //     .getListProduct(page, pageSize)
+  //     .then((res) => {
+  //       console.log(res.data.metaData);
+  //       const { page, items, pageSize, totalItem } = res.data.metaData;
+  //       const data = items.map((item) => {
+  //         return {
+  //           key: item.id,
+  //           image: item.main_image,
+  //           name: item.name,
+  //           price: item.price,
+  //           product_type: item.product_type.name,
+  //           stockQuantity: item.stock_quantity,
+  //           ...item,
+  //         };
+  //       });
+  //       setListProduct(data);
+  //       setPagination({
+  //         current: page,
+  //         pageSize,
+  //         total: totalItem,
+  //       });
+  //     })
+  //     .catch((err) => {
+  //       console.log(err);
+  //     })
+  //     .finally(() => setLoading(false));
+  // };
 
   const handleTableChange = (pagination) => {
-    console.log("Refetch with:", pagination.current, pagination.pageSize);
+    // console.log("Refetch with:", pagination.current, pagination.pageSize);
     setPagination({
       current: pagination.current,
       pageSize: pagination.pageSize,
       total: pagination.total, // giữ lại nếu muốn
     });
-    fetchData(pagination.current, pagination.pageSize);
+    // fetchData(pagination.current, pagination.pageSize);
   };
 
+  const { mutate: deleteProduct } = useMutate({
+    mutationFunction: productQueries.deleteProduct.queryFunction,
+  });
+
   const handleDelete = (productId) => {
-    productService
-      .delete(productId, token)
-      .then((res) => {
-        console.log(res);
-        handleNotification("success", "Xóa sản phẩm thành công");
-        fetchData(pagination.current, pagination.pageSize);
-      })
-      .catch((err) => {
-        handleNotification("error", "Xóa sản phẩm thất bại");
-        fetchData(pagination.current, pagination.pageSize);
-        console.log(err);
-      });
+    deleteProduct(
+      { id: productId, token },
+      {
+        onSuccess: () => {
+          handleNotification("success", "Xóa sản phẩm thành công");
+          queryClient.invalidateQueries(["getProducts"]);
+        },
+        onError: () => {
+          handleNotification("error", "Xóa sản phẩm thất bại");
+        },
+      }
+    );
+    // productService
+    //   .delete(productId, token)
+    //   .then((res) => {
+    //     console.log(res);
+    //     handleNotification("success", "Xóa sản phẩm thành công");
+    //     // fetchData(pagination.current, pagination.pageSize);
+    //   })
+    //   .catch((err) => {
+    //     handleNotification("error", "Xóa sản phẩm thất bại");
+    //     // fetchData(pagination.current, pagination.pageSize);
+    //     console.log(err);
+    //   });
   };
 
   const handleEdit = (product) => {
@@ -153,10 +207,6 @@ const ManagerProduct = () => {
     console.log("???");
     setIsModalEditOpen(false);
   };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   return (
     <div>
@@ -188,7 +238,6 @@ const ManagerProduct = () => {
         <EditProductModal
           product={product}
           onCloseModal={handleCancel}
-          fetchData={fetchData}
           pagination={pagination}
         />
       </Modal>

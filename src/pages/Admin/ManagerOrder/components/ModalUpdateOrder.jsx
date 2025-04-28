@@ -4,8 +4,10 @@ import { useFormik } from "formik";
 import * as yup from "yup";
 import { InputCustom } from "../../../../components/InputCustom";
 import { Button, Select } from "antd";
-import { orderService } from "../../../../services/order.service";
+import { orderQueries, orderService } from "../../../../services/order.service";
 import { useNotificationContext } from "../../../../store/Notification.Context";
+import useMutate from "../../../../hooks/api/useMutate";
+import queryClient from "../../../../hooks/api/queryConfig";
 
 const { Option } = Select;
 
@@ -33,6 +35,10 @@ const ModalUpdateOrder = ({
       .required("Bắt buộc"),
   });
 
+  const { mutate: updateOrder } = useMutate({
+    mutationFunction: orderQueries.updateOrder.queryFunction,
+  });
+
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -43,19 +49,44 @@ const ModalUpdateOrder = ({
     validationSchema,
     onSubmit: async (values) => {
       console.log(values);
-      try {
-        const res = await orderService.update(token, order.id, {
-          email: values.email,
-          total_price: +values.total_price,
-          status: values.status,
-        });
-        fetchOrderData(pagination.current, pagination.pageSize);
-        handleNotification("success", "Cập nhật đơn hàng thành công");
-        setIsModalUpdateOrder(false);
-      } catch (error) {
-        console.log(error);
-        handleNotification("error", error.response.data.message);
-      }
+      const data = {
+        email: values.email,
+        total_price: +values.total_price,
+        status: values.status,
+      };
+
+      updateOrder(
+        {
+          token,
+          id: order.id,
+          data,
+        },
+        {
+          onSuccess: () => {
+            handleNotification("success", "Cập nhật đơn hàng thành công");
+            queryClient.invalidateQueries(["getOrders"]);
+            setIsModalUpdateOrder(false);
+          },
+          onError: (err) => {
+            console.log(err);
+            handleNotification("error", err.response.data.message);
+          },
+        }
+      );
+
+      // try {
+      //   const res = await orderService.update(token, order.id, {
+      //     email: values.email,
+      //     total_price: +values.total_price,
+      //     status: values.status,
+      //   });
+      //   fetchOrderData(pagination.current, pagination.pageSize);
+      //   handleNotification("success", "Cập nhật đơn hàng thành công");
+      //   setIsModalUpdateOrder(false);
+      // } catch (error) {
+      //   console.log(error);
+      //   handleNotification("error", error.response.data.message);
+      // }
     },
   });
 

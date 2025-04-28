@@ -1,10 +1,16 @@
 import { Button, Modal, Popconfirm, Table } from "antd";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { productTypeService } from "../../../services/productType.service";
+import {
+  productTypeQueries,
+  productTypeService,
+} from "../../../services/productType.service";
 import { useNotificationContext } from "../../../store/Notification.Context";
 import ModalAddProductType from "./components/ModalAddProductType";
 import ModalUpdateProductType from "./components/ModalUpdateProductType";
+import useGetQuery from "../../../hooks/api/useQuery";
+import useMutate from "../../../hooks/api/useMutate";
+import queryClient from "../../../hooks/api/queryConfig";
 
 const ManagerProductType = () => {
   const { token } = useSelector((state) => state.userSlice);
@@ -13,7 +19,7 @@ const ManagerProductType = () => {
   const [productTypeData, setProductTypeData] = useState([]);
   const [productType, setProductType] = useState({});
 
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -24,31 +30,59 @@ const ManagerProductType = () => {
   const [isModalUpdateProductType, setIsModalUpdateProductType] =
     useState(false);
 
-  const fetchProductType = (page, pageSize) => {
-    // console.log({ page, pageSize });
-    setIsLoading(true);
-    productTypeService
-      .getList(token, page, pageSize)
-      .then((res) => {
-        // console.log(res.data.metaData);
-        const { page, pageSize, totalItem, items } = res.data.metaData;
-        setProductTypeData(items);
-        setPagination({
-          pageSize,
-          current: page,
-          total: totalItem,
-        });
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => setIsLoading(false));
-  };
+  const { data: rawProductTypeData, isLoading } = useGetQuery({
+    queryInfo: productTypeQueries.getProductTypes,
+    body: {
+      token,
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    },
+  });
 
   useEffect(() => {
-    // console.log({ pagination });
-    fetchProductType(pagination.current, pagination.pageSize);
-  }, []);
+    if (rawProductTypeData) {
+      const { items = [], page, pageSize, totalItem = 0 } = rawProductTypeData;
+
+      const formattedData = items.map((productType) => ({
+        key: productType.id,
+        ...productType,
+      }));
+
+      setProductTypeData(formattedData);
+
+      setPagination({
+        current: page,
+        pageSize,
+        total: totalItem,
+      });
+    }
+  }, [rawProductTypeData]);
+
+  // const fetchProductType = (page, pageSize) => {
+  //   // console.log({ page, pageSize });
+  //   setIsLoading(true);
+  //   productTypeService
+  //     .getList(token, page, pageSize)
+  //     .then((res) => {
+  //       // console.log(res.data.metaData);
+  //       const { page, pageSize, totalItem, items } = res.data.metaData;
+  //       setProductTypeData(items);
+  //       setPagination({
+  //         pageSize,
+  //         current: page,
+  //         total: totalItem,
+  //       });
+  //     })
+  //     .catch((err) => {
+  //       console.log(err);
+  //     })
+  //     .finally(() => setIsLoading(false));
+  // };
+
+  // useEffect(() => {
+  //   // console.log({ pagination });
+  //   fetchProductType(pagination.current, pagination.pageSize);
+  // }, []);
 
   const columns = [
     {
@@ -95,7 +129,7 @@ const ManagerProductType = () => {
       current: pagination.current,
       pageSize: pagination.pageSize,
     });
-    fetchProductType(pagination.current, pagination.pageSize);
+    // fetchProductType(pagination.current, pagination.pageSize);
   };
 
   //  Hàm Sửa
@@ -105,21 +139,41 @@ const ManagerProductType = () => {
     setIsModalUpdateProductType(true);
   };
 
+  const { mutate: deleteProductType } = useMutate({
+    mutationFunction: productTypeQueries.deleteProductType.queryFunction,
+  });
+
   //  Hàm Xóa
   const handleDelete = (productTypeId) => {
     console.log(productTypeId);
-    productTypeService
-      .delete(token, productTypeId)
-      .then((res) => {
-        console.log(res);
-        handleNotification("success", "Xóa kiểu sản phẩm thành công");
-        fetchProductType(pagination.current, pagination.pageSize);
-      })
-      .catch((err) => {
-        console.log(err);
-        handleNotification("error", "Có lỗi gì đó xảy ra");
-        fetchProductType(pagination.current, pagination.pageSize);
-      });
+    deleteProductType(
+      {
+        token,
+        id: productTypeId,
+      },
+      {
+        onSuccess: () => {
+          handleNotification("success", "Xóa kiểu sản phẩm thành công");
+          queryClient.invalidateQueries(["getProductTypes"]);
+        },
+        onError: () => {
+          handleNotification("error", "Xóa kiểu sản phẩm thất bại");
+        },
+      }
+    );
+
+    // productTypeService
+    //   .delete(token, productTypeId)
+    //   .then((res) => {
+    //     console.log(res);
+    //     handleNotification("success", "Xóa kiểu sản phẩm thành công");
+    //     // fetchProductType(pagination.current, pagination.pageSize);
+    //   })
+    //   .catch((err) => {
+    //     console.log(err);
+    //     handleNotification("error", "Có lỗi gì đó xảy ra");
+    //     // fetchProductType(pagination.current, pagination.pageSize);
+    //   });
   };
 
   return (
@@ -136,10 +190,7 @@ const ManagerProductType = () => {
       </div>
       <Table
         columns={columns}
-        dataSource={productTypeData.map((item) => ({
-          ...item,
-          key: item.id,
-        }))}
+        dataSource={productTypeData}
         loading={isLoading}
         pagination={pagination}
         onChange={handleTableChange}
@@ -154,7 +205,8 @@ const ManagerProductType = () => {
       >
         <ModalAddProductType
           setIsModalAddProductType={setIsModalAddProductType}
-          fetchProductType={fetchProductType}
+          // fetchProductType={fetchProductType}
+
           pagination={pagination}
         />
       </Modal>
@@ -168,7 +220,7 @@ const ManagerProductType = () => {
       >
         <ModalUpdateProductType
           productType={productType}
-          fetchProductType={fetchProductType}
+          // fetchProductType={fetchProductType}
           pagination={pagination}
           setIsModalUpdateProductType={setIsModalUpdateProductType}
         />

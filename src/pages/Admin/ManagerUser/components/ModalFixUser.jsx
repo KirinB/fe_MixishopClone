@@ -3,10 +3,12 @@ import { useFormik } from "formik";
 import React, { useEffect, useState } from "react";
 import { InputCustom } from "../../../../components/InputCustom";
 import * as yup from "yup";
-import { userService } from "../../../../services/user.service";
+import { userQueries, userService } from "../../../../services/user.service";
 import { useSelector } from "react-redux";
 import { useNotificationContext } from "../../../../store/Notification.Context";
-const ModalFixUser = ({ user, setReRender, setIsModalFixUser }) => {
+import useMutate from "../../../../hooks/api/useMutate";
+import queryClient from "../../../../hooks/api/queryConfig";
+const ModalFixUser = ({ user, setIsModalFixUser }) => {
   const { handleNotification } = useNotificationContext();
   const { token } = useSelector((state) => state.userSlice);
   const [userInfo, setUserInfo] = useState({});
@@ -15,6 +17,10 @@ const ModalFixUser = ({ user, setReRender, setIsModalFixUser }) => {
     setUserInfo(user);
     console.log({ userInfo });
   }, [user]);
+
+  const { mutate: updateUser } = useMutate({
+    mutationFunction: userQueries.updateUser.queryFunction,
+  });
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -44,20 +50,34 @@ const ModalFixUser = ({ user, setReRender, setIsModalFixUser }) => {
     }),
     onSubmit: async (values) => {
       console.log(values);
-      userService
-        .updateUserById(userInfo.key, values, token)
-        .then((res) => {
-          console.log(res);
-          handleNotification("success", "Thay đổi thông tin thành công!");
-          setReRender(true);
-          setIsModalFixUser(false);
-        })
-        .catch((err) => {
-          console.log(err);
-          handleNotification("error", "Có lỗi gì đó xảy ra");
-          setReRender(true);
-          setIsModalFixUser(false);
-        });
+      updateUser(
+        { id: userInfo.key, data: values, token },
+        {
+          onSuccess: () => {
+            handleNotification("success", "Cập nhật thông tin thành công");
+            queryClient.invalidateQueries(["getUsers"]);
+            setIsModalFixUser(false);
+          },
+          onError: () => {
+            handleNotification("error", "Cập nhật thông tin thất bại");
+            setIsModalFixUser(false);
+          },
+        }
+      );
+      // userService
+      //   .updateUserById(userInfo.key, values, token)
+      //   .then((res) => {
+      //     console.log(res);
+      //     handleNotification("success", "Thay đổi thông tin thành công!");
+      //     setReRender(true);
+      //     setIsModalFixUser(false);
+      //   })
+      //   .catch((err) => {
+      //     console.log(err);
+      //     handleNotification("error", "Có lỗi gì đó xảy ra");
+      //     setReRender(true);
+      //     setIsModalFixUser(false);
+      //   });
     },
   });
   return (

@@ -8,7 +8,12 @@ import { Button, Select, Upload } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import * as yup from "yup";
 import { productTypeService } from "../../../../services/productType.service";
-import { productService } from "../../../../services/product.service";
+import {
+  productQueries,
+  productService,
+} from "../../../../services/product.service";
+import useMutate from "../../../../hooks/api/useMutate";
+import queryClient from "../../../../hooks/api/queryConfig";
 
 const validationSchema = yup.object().shape({
   name: yup.string().required("Tên sản phẩm không được để trống"),
@@ -24,7 +29,7 @@ const validationSchema = yup.object().shape({
     .required("Danh mục không được để trống"),
 });
 
-const EditProductModal = ({ product, onCloseModal, fetchData, pagination }) => {
+const EditProductModal = ({ product, onCloseModal }) => {
   // console.log({ pagination });
   const { token } = useSelector((state) => state.userSlice);
 
@@ -72,6 +77,10 @@ const EditProductModal = ({ product, onCloseModal, fetchData, pagination }) => {
     );
   }, [product]);
 
+  const { mutate: updateProduct } = useMutate({
+    mutationFunction: productQueries.updateProduct.queryFunction,
+  });
+
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -85,32 +94,58 @@ const EditProductModal = ({ product, onCloseModal, fetchData, pagination }) => {
     },
     validationSchema,
     onSubmit: async (values) => {
-      try {
-        const formData = new FormData();
-        formData.append("name", values.name);
-        formData.append("price", values.price);
-        formData.append("description", values.description);
-        formData.append("stock_quantity", values.stock_quantity);
-        formData.append("sku", values.sku);
-        formData.append("product_type_id", values.product_type_id);
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("price", values.price);
+      formData.append("description", values.description);
+      formData.append("stock_quantity", values.stock_quantity);
+      formData.append("sku", values.sku);
+      formData.append("product_type_id", values.product_type_id);
 
-        if (values.image instanceof File) {
-          formData.append("image", values.image);
-        }
-
-        const res = await productService.updateById(
-          product.id,
-          formData,
-          token
-        );
-
-        handleNotification("success", "Cập nhật sản phẩm thành công");
-        fetchData(pagination.current, pagination.pageSize);
-        onCloseModal();
-      } catch (error) {
-        console.log("Lỗi cập nhật sản phẩm:", error);
-        handleNotification("error", "Cập nhật sản phẩm thất bại");
+      if (values.image instanceof File) {
+        formData.append("image", values.image);
       }
+
+      updateProduct(
+        { id: product.id, data: formData, token },
+        {
+          onSuccess: () => {
+            handleNotification("success", "Cập nhật đơn hàng thành công");
+            queryClient.invalidateQueries([`getProducts`]);
+            onCloseModal();
+          },
+          onError: () => {
+            handleNotification("error", "Cập nhật đơn hàng thất bại");
+          },
+        }
+      );
+
+      //   try {
+      //     const formData = new FormData();
+      //     formData.append("name", values.name);
+      //     formData.append("price", values.price);
+      //     formData.append("description", values.description);
+      //     formData.append("stock_quantity", values.stock_quantity);
+      //     formData.append("sku", values.sku);
+      //     formData.append("product_type_id", values.product_type_id);
+
+      //     if (values.image instanceof File) {
+      //       formData.append("image", values.image);
+      //     }
+
+      //     const res = await productService.updateById(
+      //       product.id,
+      //       formData,
+      //       token
+      //     );
+
+      //     handleNotification("success", "Cập nhật sản phẩm thành công");
+      //     fetchData(pagination.current, pagination.pageSize);
+      //     onCloseModal();
+      //   } catch (error) {
+      //     console.log("Lỗi cập nhật sản phẩm:", error);
+      //     handleNotification("error", "Cập nhật sản phẩm thất bại");
+      //   }
     },
   });
 

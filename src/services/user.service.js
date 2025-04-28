@@ -32,3 +32,30 @@ export const userService = {
     });
   },
 };
+
+export const userQueries = {
+  getUsers: {
+    queryKey: "getUsers",
+    queryFunction: ({ token, page, pageSize }) => {
+      return userService.getListUser(token, page, pageSize);
+    },
+  },
+  createUser: {
+    queryKey: "createUser",
+    queryFunction: ({ data, token }) => {
+      return userService.addNewUser(data, token);
+    },
+  },
+  updateUser: {
+    queryKey: "updateUser",
+    queryFunction: ({ id, data, token }) => {
+      return userService.updateUserById(id, data, token);
+    },
+  },
+  deleteUser: {
+    queryKey: "deleteUser",
+    queryFunction: ({ id, token }) => {
+      return userService.deleteUserById(id, token);
+    },
+  },
+};

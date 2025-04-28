@@ -47,3 +47,33 @@ export const orderService = {
     });
   },
 };
+
+export const orderQueries = {
+  createOrder: {
+    queryKey: "createOrder",
+    queryFunction: ({ data, token }) => {
+      return orderService.createOrder(data, token);
+    },
+  },
+
+  getOrders: {
+    queryKey: "getOrders",
+    queryFunction: ({ token, page, pageSize, search }) => {
+      return orderService.getList(token, page, pageSize, search);
+    },
+  },
+
+  updateOrder: {
+    queryKey: "updateOrder",
+    queryFunction: ({ token, id, data }) => {
+      return orderService.update(token, id, data);
+    },
+  },
+
+  deleteOrder: {
+    queryKey: "deleteOrder",
+    queryFunction: ({ token, id }) => {
+      return orderService.delete(token, id);
+    },
+  },
+};

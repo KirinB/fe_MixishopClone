@@ -9,6 +9,8 @@ import { MdOutlineSpaceDashboard } from "react-icons/md";
 import { FaRegMoneyBillAlt, FaRegUser } from "react-icons/fa";
 import { AiOutlineProduct } from "react-icons/ai";
 import { GiClothes } from "react-icons/gi";
+import { QueryClientProvider } from "@tanstack/react-query";
+import queryClient from "../hooks/api/queryConfig";
 
 const { Header, Sider, Content } = Layout;
 
@@ -22,7 +24,7 @@ const App = () => {
   if (!hasPermission) return null;
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <HeaderAdminTemplate />
       <Layout className="min-h-screen">
         <Sider trigger={null} collapsible collapsed={collapsed}>
@@ -112,7 +114,7 @@ const App = () => {
           </Content>
         </Layout>
       </Layout>
-    </>
+    </QueryClientProvider>
   );
 };
 

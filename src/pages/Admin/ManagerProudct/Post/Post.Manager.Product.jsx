@@ -9,7 +9,12 @@ import axios from "axios";
 import { productTypeService } from "../../../../services/productType.service";
 import { useSelector } from "react-redux";
 import { useNotificationContext } from "../../../../store/Notification.Context";
-import { productService } from "../../../../services/product.service";
+import {
+  productQueries,
+  productService,
+} from "../../../../services/product.service";
+import useMutate from "../../../../hooks/api/useMutate";
+import queryClient from "../../../../hooks/api/queryConfig";
 
 const validationSchema = yup.object().shape({
   name: yup.string().required("Tên sản phẩm không được để trống"),
@@ -47,6 +52,11 @@ const PostManagerProduct = () => {
   const handleCustomUpload = async ({ file, onSuccess }) => {
     ///
   };
+
+  const { mutate: createProduct } = useMutate({
+    mutationFunction: productQueries.createProduct.queryFunction,
+  });
+
   // Formik
   const formik = useFormik({
     enableReinitialize: true,
@@ -75,19 +85,35 @@ const PostManagerProduct = () => {
       formData.append("product_type_id", values.product_type_id);
       formData.append("image", values.image);
 
-      productService
-        .create(formData, token)
-        .then((res) => {
-          console.log(res);
-          handleNotification("success", "Thêm mới sản phẩm thành công");
-          resetForm();
-          setFile(null); // Xóa ảnh khỏi state
-          formik.setFieldValue("image", null); // Xóa file trong Formik
-        })
-        .catch((err) => {
-          handleNotification("error", err.response.data.message);
-          console.log(err);
-        });
+      createProduct(
+        { data: formData, token },
+        {
+          onSuccess: () => {
+            handleNotification("success", "Thêm mới sản phẩm thành công");
+            resetForm();
+            setFile(null);
+            formik.setFieldValue("image", null);
+            queryClient.invalidateQueries(["getProducts"]);
+          },
+          onError: (err) => {
+            handleNotification("error", err.response.data.message);
+          },
+        }
+      );
+
+      // productService
+      //   .create(formData, token)
+      //   .then((res) => {
+      //     console.log(res);
+      //     handleNotification("success", "Thêm mới sản phẩm thành công");
+      //     resetForm();
+      //     setFile(null);
+      //     formik.setFieldValue("image", null); // Xóa file trong Formik
+      //   })
+      //   .catch((err) => {
+      //     handleNotification("error", err.response.data.message);
+      //     console.log(err);
+      //   });
     },
   });
 
